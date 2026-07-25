@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SportsBot — exchange microstructure, measured honestly</title>
+<meta name="description" content="A paper-first Betfair exchange research programme. Pre-registered studies, frozen kill gates, public verdicts.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='2' width='6' height='12' fill='%232e6fa3'/%3E%3Crect x='9' y='2' width='6' height='12' fill='%23f2a0b5'/%3E%3C/svg%3E">
+<style>
+:root{
+  --paper:#fafbfc; --grid:#e3e8ee; --ink:#17242e; --muted:#5d707f;
+  --back:#79b4e8; --back-deep:#2e6fa3; --lay:#f2a0b5; --lay-deep:#c25e77;
+  --go:#2e8b57; --kill:#c0392b; --card:#ffffff;
+  --mono:ui-monospace,"Cascadia Code","SF Mono",Consolas,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --paper:#10181f; --grid:#243240; --ink:#e8eef3; --muted:#8fa3b3;
+         --card:#17222c; --back:#3d7db5; --lay:#b56076; }
+}
+:root[data-theme="dark"]{ --paper:#10181f; --grid:#243240; --ink:#e8eef3;
+  --muted:#8fa3b3; --card:#17222c; --back:#3d7db5; --lay:#b56076; }
+:root[data-theme="light"]{ --paper:#fafbfc; --grid:#e3e8ee; --ink:#17242e;
+  --muted:#5d707f; --card:#ffffff; --back:#79b4e8; --lay:#f2a0b5; }
+
+*{box-sizing:border-box;margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);
+     line-height:1.55;-webkit-font-smoothing:antialiased}
+main{max-width:880px;margin:0 auto;padding:0 20px 64px}
+
+/* masthead + the ladder strip signature */
+header{padding:40px 0 0}
+.mast{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-size:clamp(26px,4.5vw,38px);font-weight:800;letter-spacing:-.03em}
+h1 .tick{color:var(--back-deep)}
+.livepill{font-family:var(--mono);font-size:12px;padding:3px 10px;border-radius:3px;
+  border:1px solid var(--grid);color:var(--muted)}
+.livepill.stale{border-color:var(--kill);color:var(--kill);font-weight:700}
+.thesis{margin-top:10px;max-width:56ch;color:var(--muted)}
+.mode{margin-top:6px;font-family:var(--mono);font-size:12.5px;color:var(--ink)}
+.ladder{display:grid;grid-template-columns:repeat(12,1fr);height:10px;margin:26px 0 0;
+  border-radius:2px;overflow:hidden}
+.ladder i{display:block}
+.ladder i:nth-child(odd){background:var(--back)}
+.ladder i:nth-child(even){background:var(--lay)}
+
+section{margin-top:44px}
+h2{font-size:13px;font-family:var(--mono);font-weight:600;text-transform:uppercase;
+   letter-spacing:.14em;color:var(--muted);margin-bottom:14px}
+
+/* study cards as ladder cells */
+.studies{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.study{background:var(--card);border:1px solid var(--grid);border-top:4px solid var(--back);
+  border-radius:4px;padding:16px 16px 14px}
+.study[data-state="PASS"]{border-top-color:var(--go)}
+.study[data-state="KILLED"]{border-top-color:var(--kill)}
+.study[data-state="TRAINED"]{border-top-color:var(--lay-deep)}
+.study .name{font-weight:700;font-size:15px}
+.study .state{font-family:var(--mono);font-size:12px;margin-top:4px}
+.study .state b{letter-spacing:.08em}
+.study[data-state="PASS"] .state b{color:var(--go)}
+.study[data-state="KILLED"] .state b{color:var(--kill)}
+.study[data-state="PENDING"] .state b{color:var(--muted)}
+.study[data-state="TRAINED"] .state b{color:var(--lay-deep)}
+.study .headline{margin-top:10px;font-family:var(--mono);font-size:13px;color:var(--muted);
+  min-height:2.6em}
+
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:13px}
+th{text-align:left;color:var(--muted);font-weight:600;padding:6px 10px;
+   border-bottom:1px solid var(--grid);text-transform:uppercase;font-size:11px;letter-spacing:.1em}
+td{padding:7px 10px;border-bottom:1px solid var(--grid)}
+td.err{color:var(--kill);font-weight:700}
+td.zero{color:var(--muted)}
+.tablewrap{overflow-x:auto;background:var(--card);border:1px solid var(--grid);border-radius:4px}
+
+/* download progress — track in grid, fill in back-blue */
+.progress{display:flex;align-items:center;gap:8px;min-width:120px}
+.progress .track{flex:1;height:6px;border-radius:3px;background:var(--grid);overflow:hidden}
+.progress .fill{display:block;height:100%;background:var(--back-deep);border-radius:3px}
+.progress .pct{font-size:11px;color:var(--muted);min-width:38px;text-align:right}
+.overallbar{display:flex;align-items:center;gap:10px;margin:0 0 12px}
+.overallbar .track{flex:1;height:8px;border-radius:4px;background:var(--grid);overflow:hidden}
+.overallbar .fill{display:block;height:100%;background:linear-gradient(90deg,var(--back-deep),var(--back));border-radius:4px}
+.overallbar .lbl{font-family:var(--mono);font-size:12px;color:var(--muted);white-space:nowrap}
+
+.phases{display:flex;flex-direction:column;gap:0;border-left:2px solid var(--grid);padding-left:18px}
+.phase{padding:10px 0;color:var(--muted);position:relative}
+.phase::before{content:"";position:absolute;left:-23px;top:18px;width:8px;height:8px;
+  border-radius:50%;background:var(--grid)}
+.phase.active{color:var(--ink)}
+.phase.active::before{background:var(--go)}
+.phase .t{font-weight:700;font-family:var(--mono);font-size:13px}
+.phase.active .t::after{content:" — ACTIVE";color:var(--go);letter-spacing:.08em}
+.phase .d{font-size:14px}
+
+footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--grid);
+  color:var(--muted);font-size:13px;max-width:64ch}
+footer b{color:var(--ink)}
+
+@media (prefers-reduced-motion: no-preference){
+  .study{transition:transform .15s ease}
+  .study:hover{transform:translateY(-2px)}
+}
+a{color:var(--back-deep)}
+:focus-visible{outline:2px solid var(--back-deep);outline-offset:2px}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div class="mast">
+    <h1><span class="tick">▮</span> SportsBot</h1>
+    <span class="livepill" id="livepill">LOADING</span>
+  </div>
+  <p class="thesis" id="thesis">Trade GB/IE racing pre-off microstructure on Betfair. Never predict sports outcomes.</p>
+  <p class="mode" id="mode">PAPER ONLY — money inert until pre-registered gates green</p>
+  <div class="ladder" aria-hidden="true">
+    <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+  </div>
+</header>
+
+<section aria-labelledby="h-studies">
+  <h2 id="h-studies">Pre-registered studies</h2>
+  <div class="studies" id="studies"></div>
+</section>
+
+<section aria-labelledby="h-archive">
+  <h2 id="h-archive">Archive coverage — free BSP settled-price data</h2>
+  <div class="overallbar" id="overallbar" hidden>
+    <span class="lbl">DOWNLOAD</span>
+    <span class="track"><span class="fill" id="overallfill" style="width:0%"></span></span>
+    <span class="lbl" id="overallpct">0%</span>
+    <span class="lbl" id="overallmb"></span>
+    <span class="lbl" id="overalleta"></span>
+  </div>
+  <div class="tablewrap"><table id="archive">
+    <thead><tr><th>market data</th><th>progress</th><th>days</th><th>first</th><th>last</th><th>errors</th></tr></thead>
+    <tbody></tbody>
+  </table></div>
+</section>
+
+<section aria-labelledby="h-phases">
+  <h2 id="h-phases">Programme phases</h2>
+  <div class="phases" id="phases"></div>
+</section>
+
+<footer>
+  <p><b>Results are public. The recipe is not.</b> Study verdicts, confidence
+  intervals and coverage are published as they land; parameters, signals and
+  selection rules stay private. Every study's rules and kill thresholds were
+  frozen before the evaluation data was examined.</p>
+</footer>
+</main>
+
+<script id="initial" type="application/json">
+{"generated_at":"","generated_epoch_ms":0,"update_interval_s":3600,
+ "programme":{"name":"SportsBot","thesis":"Trade GB/IE racing pre-off microstructure on Betfair. Never predict sports outcomes.","mode":"PAPER ONLY — money inert until pre-registered gates green"},
+ "archive":{"days_ok":0,"keys":[]},
+ "studies":[
+  {"study":"A","name":"Study A","state":"PENDING","split":"—","headline":"awaiting archive data","updated":"—"},
+  {"study":"B","name":"Study B","state":"PENDING","split":"—","headline":"awaiting archive data","updated":"—"},
+  {"study":"C","name":"Study C","state":"PENDING","split":"—","headline":"awaiting archive data","updated":"—"}],
+ "phases":[
+  {"title":"Phase 0","desc":"Free historical-data studies with frozen, pre-registered kill gates","active":true},
+  {"title":"Phase 1","desc":"Market recording + fill-simulator validation on free historical data","active":false},
+  {"title":"Phase 2","desc":"Candidate strategies replayed through a causal fill simulator","active":false},
+  {"title":"Phase 3","desc":"Micro-stake live probes, sim-vs-live divergence gates, scale rules","active":false}]}
+</script>
+<script>
+(function(){
+  "use strict";
+  var lastSnapEpoch = 0;
+  var staleAfterMs = 26*3600*1000; // fallback until a payload declares cadence
+  var etaEpoch;   // undefined = unknown, null = downloader idle, 0 = complete
+
+  function tickEta(){
+    var out = document.getElementById("overalleta");
+    if(!out) return;
+    if(etaEpoch === 0){ out.textContent = ""; return; }
+    if(etaEpoch === null || etaEpoch === undefined){
+      out.textContent = (etaEpoch === null) ? "· paused" : "";
+      return;
+    }
+    var left = etaEpoch - Date.now();
+    if(left <= 0){ out.textContent = "· ETA any moment"; return; }
+    var h = Math.floor(left/3600000);
+    var m = Math.round((left % 3600000)/60000);
+    out.textContent = "· ETA " + (h > 0 ? h + "h " : "") + m + "m";
+  }
+
+  function el(tag, cls, text){
+    var n=document.createElement(tag);
+    if(cls) n.className=cls;
+    if(text!==undefined) n.textContent=text;
+    return n;
+  }
+
+  function render(snap){
+    document.getElementById("thesis").textContent = snap.programme.thesis;
+    document.getElementById("mode").textContent = snap.programme.mode;
+
+    var studies=document.getElementById("studies");
+    studies.textContent="";
+    snap.studies.forEach(function(s){
+      var card=el("article","study");
+      card.dataset.state=s.state;
+      card.appendChild(el("div","name",s.name));
+      var st=el("div","state");
+      var b=el("b",null,s.state);
+      st.appendChild(b);
+      st.appendChild(document.createTextNode(
+        (s.split!=="—" ? "  ·  "+s.split+" split" : "") +
+        (s.updated!=="—" ? "  ·  "+s.updated : "")));
+      card.appendChild(st);
+      card.appendChild(el("div","headline",s.headline));
+      studies.appendChild(card);
+    });
+
+    var overall = snap.archive.overall_progress_pct;
+    var bar = document.getElementById("overallbar");
+    if(typeof overall === "number"){
+      bar.hidden = false;
+      document.getElementById("overallfill").style.width = overall + "%";
+      document.getElementById("overallpct").textContent =
+        (overall >= 100 ? "COMPLETE" : overall.toFixed(1) + "%");
+      var mb = snap.archive.mb_done;
+      document.getElementById("overallmb").textContent =
+        (typeof mb === "number")
+          ? "· " + (mb >= 1024 ? (mb/1024).toFixed(2)+" GB" : mb.toFixed(0)+" MB")
+          : "";
+      etaEpoch = snap.archive.eta_epoch_ms;
+      tickEta();
+    }
+
+    var tbody=document.querySelector("#archive tbody");
+    tbody.textContent="";
+    snap.archive.keys.forEach(function(k){
+      var tr=el("tr");
+      tr.appendChild(el("td",null,k.label||k.key));
+      var pTd=el("td");
+      var wrap=el("span","progress");
+      var track=el("span","track");
+      var fill=el("span","fill");
+      fill.style.width=(k.progress_pct||0)+"%";
+      track.appendChild(fill);
+      wrap.appendChild(track);
+      wrap.appendChild(el("span","pct",(k.progress_pct||0).toFixed(0)+"%"));
+      pTd.appendChild(wrap);
+      tr.appendChild(pTd);
+      tr.appendChild(el("td",null,String(k.days)));
+      tr.appendChild(el("td",null,k.first));
+      tr.appendChild(el("td",null,k.last));
+      var errTd=el("td", k.errors>0?"err":"zero", String(k.errors));
+      tr.appendChild(errTd);
+      tbody.appendChild(tr);
+    });
+
+    var phases=document.getElementById("phases");
+    phases.textContent="";
+    snap.phases.forEach(function(p){
+      var d=el("div","phase"+(p.active?" active":""));
+      d.appendChild(el("div","t",p.title));
+      d.appendChild(el("div","d",p.desc));
+      phases.appendChild(d);
+    });
+
+    lastSnapEpoch = snap.generated_epoch_ms || 0;
+    if(snap.update_interval_s){
+      // stale = several missed update cycles, floored at 26h for daily cadence
+      staleAfterMs = Math.max(4 * snap.update_interval_s * 1000, 26*3600*1000);
+    }
+    tickPill();
+  }
+
+  // the pill runs on its OWN timer so a dead host cannot freeze it green
+  function tickPill(){
+    var pill=document.getElementById("livepill");
+    if(!pill) return;
+    var age = Date.now() - lastSnapEpoch;
+    if(!lastSnapEpoch || age > staleAfterMs){
+      pill.textContent="STALE"; pill.classList.add("stale");
+    } else {
+      pill.textContent="UPDATED "+new Date(lastSnapEpoch)
+        .toISOString().slice(0,16).replace("T"," ")+" UTC";
+      pill.classList.remove("stale");
+    }
+  }
+
+  function poll(){
+    fetch("public/snapshot.json?t="+Date.now(), {cache:"no-store"})
+      .then(function(r){ if(!r.ok) throw new Error(String(r.status)); return r.json(); })
+      .then(render)
+      .catch(function(){ /* keep last render; tickPill flips STALE independently */ });
+  }
+
+  var boot=document.getElementById("initial");
+  try{ render(JSON.parse(boot.textContent)); }catch(e){}
+  poll();
+  setInterval(poll, 60000);
+  setInterval(tickPill, 30000);
+  setInterval(tickEta, 30000);
+})();
+</script>
+</body>
+</html>

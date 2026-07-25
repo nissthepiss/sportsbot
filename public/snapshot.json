@@ -1,0 +1,123 @@
+{
+  "generated_at": "2026-07-25T19:13:23+00:00",
+  "generated_epoch_ms": 1785006803111,
+  "update_interval_s": 3600,
+  "programme": {
+    "name": "SportsBot",
+    "thesis": "Trade GB/IE racing pre-off microstructure on Betfair. Never predict sports outcomes.",
+    "mode": "PAPER ONLY \u2014 money inert until pre-registered gates green"
+  },
+  "archive": {
+    "days_ok": 36177,
+    "mb_done": 3304.5,
+    "files_per_min": 0.0,
+    "remaining_files": 0,
+    "eta_epoch_ms": 0,
+    "overall_progress_pct": 100.0,
+    "keys": [
+      {
+        "key": "ukwin",
+        "label": "GB horses \u00b7 win",
+        "days": 6535,
+        "first": "2008-09-02",
+        "last": "2026-07-25",
+        "errors": 0,
+        "progress_pct": 100.0
+      },
+      {
+        "key": "ukplace",
+        "label": "GB horses \u00b7 place",
+        "days": 6553,
+        "first": "2008-08-16",
+        "last": "2026-07-25",
+        "errors": 0,
+        "progress_pct": 100.0
+      },
+      {
+        "key": "irewin",
+        "label": "IE horses \u00b7 win",
+        "days": 6536,
+        "first": "2008-09-01",
+        "last": "2026-07-25",
+        "errors": 0,
+        "progress_pct": 100.0
+      },
+      {
+        "key": "ireplace",
+        "label": "IE horses \u00b7 place",
+        "days": 6552,
+        "first": "2008-08-16",
+        "last": "2026-07-25",
+        "errors": 0,
+        "progress_pct": 100.0
+      },
+      {
+        "key": "greywin",
+        "label": "Greyhounds \u00b7 win",
+        "days": 4983,
+        "first": "2012-10-19",
+        "last": "2026-07-25",
+        "errors": 0,
+        "progress_pct": 100.0
+      },
+      {
+        "key": "greyplace",
+        "label": "Greyhounds \u00b7 place",
+        "days": 5018,
+        "first": "2012-10-19",
+        "last": "2026-07-25",
+        "errors": 0,
+        "progress_pct": 100.0
+      }
+    ]
+  },
+  "studies": [
+    {
+      "study": "A",
+      "name": "Study A",
+      "state": "KILLED",
+      "split": "validation",
+      "headline": "primary effect +0.28% (95% CI -0.20%..+0.80%)",
+      "updated": "2026-07-25"
+    },
+    {
+      "study": "B",
+      "name": "Study B",
+      "state": "KILLED",
+      "split": "validation",
+      "headline": "primary effect -0.16% (95% CI -0.34%..+0.01%)",
+      "updated": "2026-07-25"
+    },
+    {
+      "study": "C",
+      "name": "Study C",
+      "state": "PASS",
+      "split": "validation",
+      "headline": "primary effect +46.77% (95% CI +46.17%..+47.35%)",
+      "updated": "2026-07-25"
+    }
+  ],
+  "phases": [
+    {
+      "title": "Phase 0",
+      "desc": "Free historical-data studies with frozen, pre-registered kill gates",
+      "active": true
+    },
+    {
+      "title": "Phase 1",
+      "desc": "Market recording + fill-simulator validation on free historical data",
+      "active": false
+    },
+    {
+      "title": "Phase 2",
+      "desc": "Candidate strategies replayed through a causal fill simulator",
+      "active": false
+    },
+    {
+      "title": "Phase 3",
+      "desc": "Micro-stake live probes, sim-vs-live divergence gates, scale rules",
+      "active": false
+    }
+  ],
+  "preregistration_sha256": "0f28fd050cc6ef4d48aa093e8d3532143a84649ea7b679cb6334f357a857083b"
+}
